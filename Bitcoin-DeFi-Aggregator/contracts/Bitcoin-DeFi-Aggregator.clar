@@ -186,3 +186,55 @@
     (ok is-supported)
   )
 )
+
+(define-public (set-protocol-fee (new-fee-bps uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (<= new-fee-bps u10000) (err u113))  ;; Ensure fee is not greater than 100%
+    
+    (var-set protocol-fee-bps new-fee-bps)
+    (ok new-fee-bps)
+  )
+)
+
+(define-public (set-fee-recipient (new-recipient principal))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (var-set fee-recipient new-recipient)
+    (ok new-recipient)
+  )
+)
+
+(define-public (add-yield-strategy 
+  (name (string-ascii 64)) 
+  (description (string-ascii 256)) 
+  (risk-level uint) 
+  (target-yield uint)
+  (min-deposit uint)
+  (max-deposit uint)
+  (rebalance-frequency uint)
+)
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (and (>= risk-level u1) (<= risk-level u5)) (err u114))
+    
+    (let ((strategy-id (var-get next-strategy-id)))
+      (map-set yield-strategies
+        { strategy-id: strategy-id }
+        {
+          name: name,
+          description: description,
+          risk-level: risk-level,
+          enabled: true,
+          target-yield: target-yield,
+          min-deposit: min-deposit,
+          max-deposit: max-deposit,
+          rebalance-frequency: rebalance-frequency
+        }
+      )
+      (var-set next-strategy-id (+ strategy-id u1))
+      (ok strategy-id)
+    )
+  )
+)
+
