@@ -108,3 +108,47 @@
 (define-data-var next-token-id uint u1)
 (define-data-var next-strategy-id uint u1)
 
+;; Contract status
+(define-data-var contract-paused bool false)
+
+;; Governance variables
+(define-data-var governance-token principal .btc-defi-gov-token)
+(define-data-var proposal-threshold uint u100000000) ;; Minimum tokens needed to submit proposal
+
+(define-public (add-protocol (name (string-ascii 64)) (protocol-address principal) (risk-score uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (< risk-score u101) err-invalid-risk-score)
+    
+    (let ((protocol-id (var-get next-protocol-id)))
+      (map-set protocols
+        { protocol-id: protocol-id }
+        {
+          name: name,
+          address: protocol-address,
+          enabled: true,
+          risk-score: risk-score,
+          current-yield: u0,
+          liquidity: u0,
+          volume-24h: u0
+        }
+      )
+      (var-set next-protocol-id (+ protocol-id u1))
+      (ok protocol-id)
+    )
+  )
+)
+
+(define-public (toggle-protocol (protocol-id uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    
+    (let ((protocol (unwrap! (map-get? protocols { protocol-id: protocol-id }) err-protocol-not-whitelisted)))
+      (map-set protocols
+        { protocol-id: protocol-id }
+        (merge protocol { enabled: (not (get enabled protocol)) })
+      )
+      (ok (not (get enabled protocol)))
+    )
+  )
+)
