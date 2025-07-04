@@ -333,3 +333,43 @@
     true
   )
 )
+
+;; Rebalance a strategy (admin function)
+(define-public (rebalance-strategy (strategy-id uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (not (var-get contract-paused)) (err u116))
+    
+    (let ((strategy (unwrap! (map-get? yield-strategies { strategy-id: strategy-id }) (err u115))))
+      ;; In a real implementation, this would:
+      ;; 1. Analyze current allocations across protocols
+      ;; 2. Calculate optimal allocations based on current yields and risk parameters
+      ;; 3. Execute transactions to rebalance funds
+      
+      ;; For this example, we'll just return success
+      (ok true)
+    )
+  )
+)
+
+
+;; Data structure for batch swap operations
+(define-data-var batch-id uint u0)
+
+(define-map batch-operations
+  { batch-id: uint, operation-id: uint }
+  {
+    from-token: uint,
+    to-token: uint,
+    amount: uint,
+    min-output: uint
+  }
+)
+
+;; Create a new batch
+(define-public (create-batch)
+  (let ((current-batch-id (var-get batch-id)))
+    (var-set batch-id (+ current-batch-id u1))
+    (ok current-batch-id)
+  )
+)
