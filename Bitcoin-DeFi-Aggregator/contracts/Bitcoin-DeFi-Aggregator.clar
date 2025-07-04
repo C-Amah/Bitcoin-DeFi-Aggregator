@@ -238,3 +238,31 @@
   )
 )
 
+(define-public (toggle-strategy (strategy-id uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    
+    (let ((strategy (unwrap! (map-get? yield-strategies { strategy-id: strategy-id }) (err u115))))
+      (map-set yield-strategies
+        { strategy-id: strategy-id }
+        (merge strategy { enabled: (not (get enabled strategy)) })
+      )
+      (ok (not (get enabled strategy)))
+    )
+  )
+)
+
+(define-public (update-protocol-yield (protocol-id uint) (new-yield uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (is-some (map-get? protocols { protocol-id: protocol-id })) err-protocol-not-whitelisted)
+    
+    (let ((protocol (unwrap-panic (map-get? protocols { protocol-id: protocol-id }))))
+      (map-set protocols
+        { protocol-id: protocol-id }
+        (merge protocol { current-yield: new-yield })
+      )
+      (ok new-yield)
+    )
+  )
+)
