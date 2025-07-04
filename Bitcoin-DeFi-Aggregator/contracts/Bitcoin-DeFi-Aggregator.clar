@@ -298,3 +298,38 @@
     )
   )
 )
+
+;; Find a protocol that supports the given token pair
+(define-private (find-protocol-for-pair (from-token uint) (to-token uint))
+  (if (is-some (map-get? protocols { protocol-id: u1 }))
+    (some u1)
+    none
+  )
+)
+
+;; Execute route across protocols
+(define-private (execute-route (from-token uint) (to-token uint) (amount uint) (route (list 10 uint)))
+  (let (
+    (protocol-id (unwrap! (element-at route u0) err-route-not-found))
+    (protocol (unwrap! (map-get? protocols { protocol-id: protocol-id }) err-protocol-not-whitelisted))
+  )
+    (asserts! (get enabled protocol) err-protocol-disabled)
+    (ok (simulate-swap from-token to-token amount protocol-id))
+  )
+)
+
+;; Update statistics after a swap
+(define-private (update-swap-stats (from-token uint) (to-token uint) (input-amount uint) (output-amount uint))
+  (let (
+    (protocol-id (unwrap-panic (element-at (get best-route (unwrap-panic (map-get? route-cache 
+      { from-token: from-token, to-token: to-token, amount: input-amount }))) u0)))
+    (protocol (unwrap-panic (map-get? protocols { protocol-id: protocol-id })))
+    (current-volume (get volume-24h protocol))
+  )
+    (map-set protocols
+      { protocol-id: protocol-id }
+      (merge protocol { volume-24h: (+ current-volume input-amount) })
+    )
+    true
+  )
+)
