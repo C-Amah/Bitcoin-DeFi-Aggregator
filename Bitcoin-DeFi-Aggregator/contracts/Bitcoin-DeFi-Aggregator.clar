@@ -266,3 +266,35 @@
     )
   )
 )
+
+(define-public (emergency-pause)
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (var-set contract-paused true)
+    (ok true)
+  )
+)
+
+(define-public (emergency-unpause)
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (var-set contract-paused false)
+    (ok true)
+  )
+)
+
+;; Simulate result from a protocol
+(define-private (simulate-swap (from-token uint) (to-token uint) (amount uint) (protocol-id uint))
+  (let (
+    (protocol (unwrap-panic (map-get? protocols { protocol-id: protocol-id })))
+    (liquidity (get liquidity protocol))
+    (fee-rate (var-get protocol-fee-bps))
+  )
+    (if (< liquidity (* amount u10))
+      ;; High slippage if liquidity is low
+      (/ (* amount u95) u100)
+      ;; Lower slippage for high liquidity
+      (/ (* amount (- u10000 fee-rate)) u10000)
+    )
+  )
+)
